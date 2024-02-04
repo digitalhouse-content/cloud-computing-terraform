@@ -16,6 +16,19 @@ resource "aws_ecr_repository" "ecr_cloud" {
   }
 }
 
+resource "aws_ecr_repository" "ecr_cloud_express_api" {
+  name                 = "${var.subject}-express-api"
+  image_tag_mutability = "MUTABLE"
+
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+
+  tags = {
+    Name = "${var.subject}-express-api"
+  }
+}
+
 resource "aws_ecs_cluster" "cluster" {
   name = "${var.subject}-ecs-cluster"
 }
@@ -77,6 +90,36 @@ resource "aws_ecs_task_definition" "task" {
   depends_on = [ aws_iam_role.task_role, aws_ecr_repository.ecr_cloud ]
 }
 
+resource "aws_ecs_task_definition" "task_express_api" {
+  family = "${var.subject}-express-api"
+  network_mode = "awsvpc"
+  requires_compatibilities = [ local.launch-type ]
+  cpu = "256"
+  memory = "512"
+  container_definitions = jsonencode([{
+    name = "express-api",
+    image = "${aws_ecr_repository.ecr_cloud_express_api.repository_url}:latest",
+    portMappings = [
+      {
+        containerPort = 4000,
+        hostPort = 4000
+      }
+    ],
+    logConfiguration = {
+      logDriver = "awslogs",
+      options = {
+        awslogs-group = "/ecs/${var.subject}-ecs-cluster"
+        awslogs-region = "${var.region}"
+        awslogs-stream-prefix = "ecs"
+      }
+    }
+  }])
+
+  execution_role_arn = aws_iam_role.task_role.arn
+
+  depends_on = [ aws_iam_role.task_role, aws_ecr_repository.ecr_cloud_express_api ]
+}
+
 resource "aws_security_group" "ecs_sg_cloud" {
   name = "ecs-sg-${var.subject}"
   description = "Grupo de seguridad para el cluster de ECS Cloud"
@@ -85,6 +128,13 @@ resource "aws_security_group" "ecs_sg_cloud" {
   ingress {
     from_port = 3000
     to_port = 3000
+    protocol = "TCP"
+    cidr_blocks = [ "0.0.0.0/0" ]
+  }
+
+  ingress {
+    from_port = 4000
+    to_port = 4000
     protocol = "TCP"
     cidr_blocks = [ "0.0.0.0/0" ]
   }
@@ -114,6 +164,28 @@ resource "aws_ecs_service" "service" {
   }
 
   depends_on = [ aws_ecs_cluster.cluster, aws_ecs_task_definition.task, aws_subnet.subnet_public_1, aws_subnet.subnet_public_2, aws_security_group.ecs_sg_cloud ]
+
+  desired_count = 1
+}
+
+resource "aws_ecs_service" "service_express_api" {
+  name = "${var.subject}-express-api"
+  cluster = aws_ecs_cluster.cluster.id
+  task_definition = aws_ecs_task_definition.task_express_api.arn
+  launch_type = local.launch-type
+
+  network_configuration {
+    subnets = [ aws_subnet.subnet_public_1.id, aws_subnet.subnet_public_2.id ]
+    security_groups = [ aws_security_group.ecs_sg_cloud.id ]
+    assign_public_ip = local.public-ip
+  }
+
+  depends_on = [ aws_ecs_cluster.cluster, 
+    aws_ecs_task_definition.task_express_api,
+    aws_subnet.subnet_public_1,
+    aws_subnet.subnet_public_2,
+    aws_security_group.ecs_sg_cloud
+  ]
 
   desired_count = 1
 }
