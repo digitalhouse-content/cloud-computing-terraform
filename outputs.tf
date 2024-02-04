@@ -1,6 +1,6 @@
 output "vpc_id" {
   value = aws_vpc.vpc.id
-  description = "ID de la VPC vpc-cloud2"
+  description = "ID de la VPC vpc-cloud"
 }
 
 output "subnet_public_1" {
@@ -24,6 +24,6 @@ output "subnet_private_2" {
 }
 
 output "ecr_url" {
-  value = aws_ecr_repository.ecr_cloud2.repository_url
-  description = "URI de repositorio de docker cloud2-webapp-rickandmorty"
+  value = aws_ecr_repository.ecr_cloud.repository_url
+  description = "URI de repositorio de docker cloud-webapp-rickandmorty"
 }

@@ -10,7 +10,7 @@ variable "enable-dns" {
 
 variable "subject" {
   type    = string
-  default = "cloud2"
+  default = "cloud"
 }
 
 variable "port" {
@@ -26,7 +26,7 @@ variable "subnets" {
     })
   )
 
-  description = "Conjunto de variables para subnets de la vpc vpc-cloud2"
+  description = "Conjunto de variables para subnets de la vpc vpc-cloud"
 
   default = [
     {

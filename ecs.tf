@@ -3,7 +3,7 @@ locals {
   public-ip = true
 }
 
-resource "aws_ecr_repository" "ecr_cloud2" {
+resource "aws_ecr_repository" "ecr_cloud" {
   name                 = "${var.subject}-webapp-rickandmorty"
   image_tag_mutability = "MUTABLE"
 
@@ -20,7 +20,7 @@ resource "aws_ecs_cluster" "cluster" {
   name = "${var.subject}-ecs-cluster"
 }
 
-resource "aws_cloudwatch_log_group" "logs_cloud2_webapp" {
+resource "aws_cloudwatch_log_group" "logs_cloud_webapp" {
   name              = "/ecs/${var.subject}-ecs-cluster"
   retention_in_days = 3
 }
@@ -55,7 +55,7 @@ resource "aws_ecs_task_definition" "task" {
   memory = "512"
   container_definitions = jsonencode([{
     name = "rickandmorty-webapp",
-    image = "${aws_ecr_repository.ecr_cloud2.repository_url}:latest",
+    image = "${aws_ecr_repository.ecr_cloud.repository_url}:latest",
     portMappings = [
       {
         containerPort = "${var.port}",
@@ -74,10 +74,10 @@ resource "aws_ecs_task_definition" "task" {
 
   execution_role_arn = aws_iam_role.task_role.arn
 
-  depends_on = [ aws_iam_role.task_role, aws_ecr_repository.ecr_cloud2 ]
+  depends_on = [ aws_iam_role.task_role, aws_ecr_repository.ecr_cloud ]
 }
 
-resource "aws_security_group" "ecs_sg_cloud2" {
+resource "aws_security_group" "ecs_sg_cloud" {
   name = "ecs-sg-${var.subject}"
   description = "Grupo de seguridad para el cluster de ECS Cloud 2"
   vpc_id = aws_vpc.vpc.id
@@ -109,11 +109,11 @@ resource "aws_ecs_service" "service" {
 
   network_configuration {
     subnets = [ aws_subnet.subnet_public_1.id, aws_subnet.subnet_public_2.id ]
-    security_groups = [ aws_security_group.ecs_sg_cloud2.id ]
+    security_groups = [ aws_security_group.ecs_sg_cloud.id ]
     assign_public_ip = local.public-ip
   }
 
-  depends_on = [ aws_ecs_cluster.cluster, aws_ecs_task_definition.task, aws_subnet.subnet_public_1, aws_subnet.subnet_public_2, aws_security_group.ecs_sg_cloud2 ]
+  depends_on = [ aws_ecs_cluster.cluster, aws_ecs_task_definition.task, aws_subnet.subnet_public_1, aws_subnet.subnet_public_2, aws_security_group.ecs_sg_cloud ]
 
   desired_count = 1
 }
