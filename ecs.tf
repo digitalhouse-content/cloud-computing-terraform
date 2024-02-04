@@ -79,7 +79,7 @@ resource "aws_ecs_task_definition" "task" {
 
 resource "aws_security_group" "ecs_sg_cloud" {
   name = "ecs-sg-${var.subject}"
-  description = "Grupo de seguridad para el cluster de ECS Cloud 2"
+  description = "Grupo de seguridad para el cluster de ECS Cloud"
   vpc_id = aws_vpc.vpc.id
 
   ingress {
